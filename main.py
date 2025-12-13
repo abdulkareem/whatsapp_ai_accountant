@@ -1,22 +1,18 @@
 from fastapi import FastAPI, Request
 import os
 import requests
-import json
 
 app = FastAPI()
 
 # =========================
-# BASIC CONFIG
+# ENVIRONMENT VARIABLES
 # =========================
 
 WHATSAPP_TOKEN = os.environ.get("EAATXgAZBhxBYBQOIt79GxnevrrTBeHyOBfZB4LtxbN1ThfwCLcQIARHsM8HNTKm1pzOuLoNxcbl61ZA7aExP7ZASahmnzVoXroaUURr7uoZARqe6c4WVbOtsPRbygSLnQLKL56je1j5CvkAri4OA9ZB5ZCZCCBoZBQZCZB5GSfo2QQ0KpmaHir5LRSTTa0JOcn2ikddU9davrNpeyXKS9EFQgJXyFDrQNqZCBk0LjjyWSlPPQpuYi82L5DNdlG92pFuZCT4ZA0b6ob3LFIp3ynhJQ0nDcB")
 PHONE_NUMBER_ID = os.environ.get("908599349007214")
 
-# In-memory session store (for testing)
-SESSIONS = {}
-
 # =========================
-# HEALTH CHECK
+# BASIC CHECK
 # =========================
 
 @app.get("/")
@@ -31,7 +27,6 @@ def health():
 async def whatsapp_webhook(request: Request):
     data = await request.json()
 
-    # Ignore non-message callbacks
     try:
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
         sender = message["from"]
@@ -41,10 +36,10 @@ async def whatsapp_webhook(request: Request):
 
     if msg_type == "text":
         user_text = message["text"]["body"]
-        reply_text(sender, f"✅ Received your message: {user_text}")
+        send_whatsapp_text(sender, f"✅ Received: {user_text}")
 
     elif msg_type == "image":
-        reply_text(sender, "📸 Image received. Processing will be added next.")
+        send_whatsapp_text(sender, "📸 Image received. Processing coming next.")
 
     return {"status": "ok"}
 
@@ -52,16 +47,18 @@ async def whatsapp_webhook(request: Request):
 # SEND MESSAGE TO WHATSAPP
 # =========================
 
-def reply_text(to, text):
+def send_whatsapp_text(to, text):
     url = f"https://graph.facebook.com/v17.0/{908599349007214}/messages"
+
     headers = {
         "Authorization": f"Bearer {EAATXgAZBhxBYBQOIt79GxnevrrTBeHyOBfZB4LtxbN1ThfwCLcQIARHsM8HNTKm1pzOuLoNxcbl61ZA7aExP7ZASahmnzVoXroaUURr7uoZARqe6c4WVbOtsPRbygSLnQLKL56je1j5CvkAri4OA9ZB5ZCZCCBoZBQZCZB5GSfo2QQ0KpmaHir5LRSTTa0JOcn2ikddU9davrNpeyXKS9EFQgJXyFDrQNqZCBk0LjjyWSlPPQpuYi82L5DNdlG92pFuZCT4ZA0b6ob3LFIp3ynhJQ0nDcB}",
         "Content-Type": "application/json"
     }
+
     payload = {
         "messaging_product": "whatsapp",
         "to": to,
         "text": {"body": text}
     }
-    requests.post(url, headers=headers, json=payload)
 
+    requests.post(url, headers=headers, json=payload)
