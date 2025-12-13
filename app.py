@@ -9,7 +9,7 @@ app = FastAPI()
 # BASIC CONFIG
 # =========================
 
-WHATSAPP_TOKEN = os.environ.get("1161020132430957")
+WHATSAPP_TOKEN = os.environ.get("EAATXgAZBhxBYBQOIt79GxnevrrTBeHyOBfZB4LtxbN1ThfwCLcQIARHsM8HNTKm1pzOuLoNxcbl61ZA7aExP7ZASahmnzVoXroaUURr7uoZARqe6c4WVbOtsPRbygSLnQLKL56je1j5CvkAri4OA9ZB5ZCZCCBoZBQZCZB5GSfo2QQ0KpmaHir5LRSTTa0JOcn2ikddU9davrNpeyXKS9EFQgJXyFDrQNqZCBk0LjjyWSlPPQpuYi82L5DNdlG92pFuZCT4ZA0b6ob3LFIp3ynhJQ0nDcB")
 PHONE_NUMBER_ID = os.environ.get("908599349007214")
 
 # In-memory session store (for testing)
@@ -55,7 +55,7 @@ async def whatsapp_webhook(request: Request):
 def reply_text(to, text):
     url = f"https://graph.facebook.com/v17.0/{908599349007214}/messages"
     headers = {
-        "Authorization": f"Bearer {1161020132430957}",
+        "Authorization": f"Bearer {EAATXgAZBhxBYBQOIt79GxnevrrTBeHyOBfZB4LtxbN1ThfwCLcQIARHsM8HNTKm1pzOuLoNxcbl61ZA7aExP7ZASahmnzVoXroaUURr7uoZARqe6c4WVbOtsPRbygSLnQLKL56je1j5CvkAri4OA9ZB5ZCZCCBoZBQZCZB5GSfo2QQ0KpmaHir5LRSTTa0JOcn2ikddU9davrNpeyXKS9EFQgJXyFDrQNqZCBk0LjjyWSlPPQpuYi82L5DNdlG92pFuZCT4ZA0b6ob3LFIp3ynhJQ0nDcB}",
         "Content-Type": "application/json"
     }
     payload = {
