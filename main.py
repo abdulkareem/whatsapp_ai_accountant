@@ -4,6 +4,7 @@
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import PlainTextResponse
 import requests
+import os
 
 # =========================
 # APP INIT
@@ -11,18 +12,18 @@ import requests
 app = FastAPI()
 
 # =========================
-# CONFIG (SECRETS)
+# CONFIG
 # =========================
+VERIFY_TOKEN = "aicashier123"   # must match Meta webhook verify token
 
-VERIFY_TOKEN = "aicashier123"   # must match Meta verify token
-
-WHATSAPP_TOKEN = "EAAMR5p7jQ2IBQFZA5sROAQvgRxSCVpw4lqJhesek9nfAB2CDND0kz0vSC89hzZCuL0qUcLvZC2rqgKuUDPeHtcSjlytVRbAZACAAvrqyfIOs0SXTV2HADGMSX4bzwugjDsiSqYVZA595goZBBuySHajfItyrGXYPntLAVrk0XN9F6sYoZAZAQHsblpwNO7m9ZAbJ2hQTv84cZAlPx69tehRSNOutGpoeVHzBDTxwmT7XGodpMq88vXC6nDD27hgJ7dtPcPfIKn9zLHV4SOZASuzC5DQ"
-PHONE_NUMBER_ID = "908599349007214"
+# 🔐 SET THESE IN RAILWAY VARIABLES (RECOMMENDED)
+WHATSAPP_TOKEN = os.environ.get("EAAMR5p7jQ2IBQJm4yx6XxVpbZBR0MbSamIj7SVcLPek2Ao5akyZAF2i7JE17zyp3ZBGMRHUOajaaf6x2ypew3Y9kIZBBgcYAnuSGbP2ZBFjeWZCjjirfWxehjKgLqQZClZANBGX8aUkEeH04Dyh2IhKADZC5ZB9HCswhOkSTGrqoCXgP0YbVJUlyqqZBXZB74IiQocSK7abdmpJJjOaZC6LfywgB8Ywpnu8v14wccKOj5")
+PHONE_NUMBER_ID = os.environ.get("908599349007214")
 
 # =========================
-# TEMP IN-MEMORY STORAGE
+# TEMP STORAGE (REPLACE WITH DB LATER)
 # =========================
-USERS = {}
+USERS = {}   # whatsapp_number -> onboarding data
 
 # =========================
 # HEALTH CHECK
@@ -32,7 +33,7 @@ def health():
     return {"status": "AiCashier running"}
 
 # =========================
-# META WEBHOOK VERIFICATION
+# META WEBHOOK VERIFICATION (GET)
 # =========================
 @app.get("/webhook")
 def verify_webhook(
@@ -45,17 +46,19 @@ def verify_webhook(
     return PlainTextResponse("Verification failed", status_code=403)
 
 # =========================
-# WHATSAPP MESSAGE WEBHOOK
+# WHATSAPP MESSAGE WEBHOOK (POST)
 # =========================
 @app.post("/webhook")
 async def whatsapp_webhook(request: Request):
     data = await request.json()
+    print("📥 Incoming payload:", data)
 
     try:
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
         sender = message["from"]
         msg_type = message["type"]
-    except Exception:
+    except Exception as e:
+        print("❌ Payload parse error:", e)
         return {"status": "ignored"}
 
     if msg_type == "text":
@@ -71,30 +74,45 @@ async def whatsapp_webhook(request: Request):
     return {"status": "ok"}
 
 # =========================
-# SEND WHATSAPP TEXT
+# SEND WHATSAPP TEXT (CORRECT PAYLOAD)
 # =========================
 def send_text(to, text):
+    print("📤 Sending WhatsApp message to:", to)
+
+    if not WHATSAPP_TOKEN or not PHONE_NUMBER_ID:
+        print("❌ Missing WhatsApp credentials")
+        return
+
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
+
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
         "Content-Type": "application/json"
     }
+
     payload = {
         "messaging_product": "whatsapp",
+        "recipient_type": "individual",
         "to": to,
-        "text": {"body": text}
+        "type": "text",
+        "text": {
+            "preview_url": False,
+            "body": text
+        }
     }
 
     response = requests.post(url, headers=headers, json=payload)
-    print("SEND STATUS:", response.status_code)
-    print("SEND RESPONSE:", response.text)
+
+    print("📤 STATUS:", response.status_code)
+    print("📤 RESPONSE:", response.text)
 
 # =========================
-# ONBOARDING ENGINE
+# ONBOARDING FLOW
 # =========================
 def handle_onboarding(sender, text):
     user = USERS.get(sender)
 
+    # New user
     if not user:
         USERS[sender] = {
             "state": "ASK_SHOP_NAME",
@@ -124,7 +142,7 @@ def handle_onboarding(sender, text):
     elif state == "ASK_ADDRESS":
         user["address"] = text
         user["state"] = "ASK_LOCATION"
-        send_text(sender, "📍 Please share your shop location using WhatsApp location button")
+        send_text(sender, "📍 Please share your shop *location* using WhatsApp location button")
 
     elif state == "ASK_LANGUAGE":
         if text not in ["1", "2", "3"]:
@@ -139,7 +157,7 @@ def handle_onboarding(sender, text):
             f"✅ Onboarding complete!\n\n"
             f"🏪 {user['shop_name']}\n"
             f"🙋‍♂️ {user['owner_name']}\n\n"
-            f"You can now send bill photos or expense notes."
+            f"You can now send *bill photos*, *purchase bills*, or *expenses*."
         )
 
 # =========================
@@ -154,10 +172,14 @@ def handle_location(sender, location):
     user["longitude"] = location["longitude"]
     user["state"] = "ASK_LOGO"
 
-    send_text(sender, "🪧 Please send a photo of your shop board / logo")
+    send_text(
+        sender,
+        "🪧 Please send a *photo of your shop board / logo*.\n"
+        "(This will appear on customer bills)"
+    )
 
 # =========================
-# LOGO HANDLER
+# LOGO HANDLER (TEMP)
 # =========================
 def handle_logo(sender):
     user = USERS.get(sender)
