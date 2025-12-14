@@ -1,11 +1,10 @@
-from fastapi import FastAPI, Request
-import os
-import requests
-
+from fastapi import Query
+from fastapi.responses import PlainTextResponse
 app = FastAPI()
+VERIFY_TOKEN = "aicashier123"  # must match Meta exactly
 
-WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
-PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
+WHATSAPP_TOKEN = os.environ.get("EAAMR5p7jQ2IBQJm4yx6XxVpbZBR0MbSamIj7SVcLPek2Ao5akyZAF2i7JE17zyp3ZBGMRHUOajaaf6x2ypew3Y9kIZBBgcYAnuSGbP2ZBFjeWZCjjirfWxehjKgLqQZClZANBGX8aUkEeH04Dyh2IhKADZC5ZB9HCswhOkSTGrqoCXgP0YbVJUlyqqZBXZB74IiQocSK7abdmpJJjOaZC6LfywgB8Ywpnu8v14wccKOj5")
+PHONE_NUMBER_ID = os.environ.get("908599349007214")
 
 # =========================
 # TEMP IN-MEMORY STORAGE
@@ -19,9 +18,9 @@ USERS = {}   # whatsapp_number -> user data
 # =========================
 
 def send_text(to, text):
-    url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
+    url = f"https://graph.facebook.com/v17.0/{908599349007214}/messages"
     headers = {
-        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Authorization": f"Bearer {EAAMR5p7jQ2IBQJm4yx6XxVpbZBR0MbSamIj7SVcLPek2Ao5akyZAF2i7JE17zyp3ZBGMRHUOajaaf6x2ypew3Y9kIZBBgcYAnuSGbP2ZBFjeWZCjjirfWxehjKgLqQZClZANBGX8aUkEeH04Dyh2IhKADZC5ZB9HCswhOkSTGrqoCXgP0YbVJUlyqqZBXZB74IiQocSK7abdmpJJjOaZC6LfywgB8Ywpnu8v14wccKOj5}",
         "Content-Type": "application/json"
     }
     payload = {
