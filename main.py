@@ -1,7 +1,10 @@
+from fastapi import FastAPI, Request
 from fastapi import Query
 from fastapi.responses import PlainTextResponse
+import os
+import requests
 app = FastAPI()
-#VERIFY_TOKEN = "aicashier123"  # must match Meta exactly
+VERIFY_TOKEN = "aicashier123"  # must match Meta exactly
 
 WHATSAPP_TOKEN = os.environ.get("EAAMR5p7jQ2IBQJm4yx6XxVpbZBR0MbSamIj7SVcLPek2Ao5akyZAF2i7JE17zyp3ZBGMRHUOajaaf6x2ypew3Y9kIZBBgcYAnuSGbP2ZBFjeWZCjjirfWxehjKgLqQZClZANBGX8aUkEeH04Dyh2IhKADZC5ZB9HCswhOkSTGrqoCXgP0YbVJUlyqqZBXZB74IiQocSK7abdmpJJjOaZC6LfywgB8Ywpnu8v14wccKOj5")
 PHONE_NUMBER_ID = os.environ.get("908599349007214")
