@@ -3,7 +3,6 @@
 # =========================
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import PlainTextResponse
-import os
 import requests
 
 # =========================
@@ -12,18 +11,18 @@ import requests
 app = FastAPI()
 
 # =========================
-# CONFIG (ENV VARS)
+# CONFIG (SECRETS)
 # =========================
-VERIFY_TOKEN = "aicashier123"   # must match Meta exactly
 
-WHATSAPP_TOKEN = os.environ.get("EAAMR5p7jQ2IBQBNHVZB93rMwAQpiENpuOAdjLHRV2tkZCnePzW8FkbPgdV0ITpSmUEOFUxzEbVuLvVG73p9hZA4N5RTvEZCxUihqlOlmqPuojiXLuSg8a75z8WHhgqM27trJOZB9cTY5tkP1zFu04YFnPAQOAn0KBeSk9ZBDGk3JPbPZBcZAtmhH2uGXoh50seZAF32f23yGUXoayHVFOxFxZAoQ5R9FwjtTeRkLX5")
-PHONE_NUMBER_ID = os.environ.get("908599349007214")
+VERIFY_TOKEN = "aicashier123"   # must match Meta verify token
+
+WHATSAPP_TOKEN = "EAAMR5p7jQ2IBQBNHVZB93rMwAQpiENpuOAdjLHRV2tkZCnePzW8FkbPgdV0ITpSmUEOFUxzEbVuLvVG73p9hZA4N5RTvEZCxUihqlOlmqPuojiXLuSg8a75z8WHhgqM27trJOZB9cTY5tkP1zFu04YFnPAQOAn0KBeSk9ZBDGk3JPbPZBcZAtmhH2uGXoh50seZAF32f23yGUXoayHVFOxFxZAoQ5R9FwjtTeRkLX5"
+PHONE_NUMBER_ID = "908599349007214"
 
 # =========================
 # TEMP IN-MEMORY STORAGE
-# (Replace with DB later)
 # =========================
-USERS = {}  # whatsapp_number -> onboarding state & data
+USERS = {}
 
 # =========================
 # HEALTH CHECK
@@ -75,9 +74,6 @@ async def whatsapp_webhook(request: Request):
 # SEND WHATSAPP TEXT
 # =========================
 def send_text(to, text):
-    if not WHATSAPP_TOKEN or not PHONE_NUMBER_ID:
-        return
-
     url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
@@ -88,7 +84,10 @@ def send_text(to, text):
         "to": to,
         "text": {"body": text}
     }
-    requests.post(url, headers=headers, json=payload)
+
+    response = requests.post(url, headers=headers, json=payload)
+    print("SEND STATUS:", response.status_code)
+    print("SEND RESPONSE:", response.text)
 
 # =========================
 # ONBOARDING ENGINE
@@ -125,11 +124,11 @@ def handle_onboarding(sender, text):
     elif state == "ASK_ADDRESS":
         user["address"] = text
         user["state"] = "ASK_LOCATION"
-        send_text(sender, "📍 Please share your shop *location* using WhatsApp location button")
+        send_text(sender, "📍 Please share your shop location using WhatsApp location button")
 
     elif state == "ASK_LANGUAGE":
         if text not in ["1", "2", "3"]:
-            send_text(sender, "Reply with:\n1️⃣ Malayalam\n2️⃣ English\n3️⃣ Both")
+            send_text(sender, "Reply:\n1️⃣ Malayalam\n2️⃣ English\n3️⃣ Both")
             return
 
         user["language"] = {"1": "ml", "2": "en", "3": "mixed"}[text]
@@ -140,7 +139,7 @@ def handle_onboarding(sender, text):
             f"✅ Onboarding complete!\n\n"
             f"🏪 {user['shop_name']}\n"
             f"🙋‍♂️ {user['owner_name']}\n\n"
-            f"You can now send *bill photos*, *purchase bills*, or *expenses*."
+            f"You can now send bill photos or expense notes."
         )
 
 # =========================
@@ -155,11 +154,7 @@ def handle_location(sender, location):
     user["longitude"] = location["longitude"]
     user["state"] = "ASK_LOGO"
 
-    send_text(
-        sender,
-        "🪧 Please send a *photo of your shop board / logo*.\n"
-        "(This will appear on customer bills)"
-    )
+    send_text(sender, "🪧 Please send a photo of your shop board / logo")
 
 # =========================
 # LOGO HANDLER
@@ -174,7 +169,7 @@ def handle_logo(sender):
 
     send_text(
         sender,
-        "🌐 Preferred language for bills?\n\n"
+        "🌐 Preferred bill language?\n\n"
         "1️⃣ Malayalam\n"
         "2️⃣ English\n"
         "3️⃣ Both"
