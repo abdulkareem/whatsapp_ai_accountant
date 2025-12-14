@@ -1,52 +1,55 @@
-from fastapi import FastAPI, Request
-from fastapi import Query
+# =========================
+# IMPORTS
+# =========================
+from fastapi import FastAPI, Request, Query
 from fastapi.responses import PlainTextResponse
 import os
 import requests
-app = FastAPI()
-VERIFY_TOKEN = "aicashier123"  # must match Meta exactly
 
-WHATSAPP_TOKEN = os.environ.get("EAAMR5p7jQ2IBQJm4yx6XxVpbZBR0MbSamIj7SVcLPek2Ao5akyZAF2i7JE17zyp3ZBGMRHUOajaaf6x2ypew3Y9kIZBBgcYAnuSGbP2ZBFjeWZCjjirfWxehjKgLqQZClZANBGX8aUkEeH04Dyh2IhKADZC5ZB9HCswhOkSTGrqoCXgP0YbVJUlyqqZBXZB74IiQocSK7abdmpJJjOaZC6LfywgB8Ywpnu8v14wccKOj5")
-PHONE_NUMBER_ID = os.environ.get("908599349007214")
+# =========================
+# APP INIT
+# =========================
+app = FastAPI()
+
+# =========================
+# CONFIG (ENV VARS)
+# =========================
+VERIFY_TOKEN = "aicashier123"   # must match Meta exactly
+
+WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
+PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 
 # =========================
 # TEMP IN-MEMORY STORAGE
 # (Replace with DB later)
 # =========================
-
-USERS = {}   # whatsapp_number -> user data
-
-# =========================
-# UTIL: SEND WHATSAPP TEXT
-# =========================
-
-def send_text(to, text):
-    url = f"https://graph.facebook.com/v17.0/{908599349007214}/messages"
-    headers = {
-        "Authorization": f"Bearer {EAAMR5p7jQ2IBQJm4yx6XxVpbZBR0MbSamIj7SVcLPek2Ao5akyZAF2i7JE17zyp3ZBGMRHUOajaaf6x2ypew3Y9kIZBBgcYAnuSGbP2ZBFjeWZCjjirfWxehjKgLqQZClZANBGX8aUkEeH04Dyh2IhKADZC5ZB9HCswhOkSTGrqoCXgP0YbVJUlyqqZBXZB74IiQocSK7abdmpJJjOaZC6LfywgB8Ywpnu8v14wccKOj5}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "text": {"body": text}
-    }
-    requests.post(url, headers=headers, json=payload)
+USERS = {}  # whatsapp_number -> onboarding state & data
 
 # =========================
 # HEALTH CHECK
 # =========================
-
 @app.get("/")
 def health():
     return {"status": "AiCashier running"}
 
 # =========================
-# WHATSAPP WEBHOOK
+# META WEBHOOK VERIFICATION
 # =========================
+@app.get("/webhook")
+def verify_webhook(
+    hub_mode: str = Query(None, alias="hub.mode"),
+    hub_verify_token: str = Query(None, alias="hub.verify_token"),
+    hub_challenge: str = Query(None, alias="hub.challenge"),
+):
+    if hub_mode == "subscribe" and hub_verify_token == VERIFY_TOKEN:
+        return PlainTextResponse(hub_challenge)
+    return PlainTextResponse("Verification failed", status_code=403)
 
+# =========================
+# WHATSAPP MESSAGE WEBHOOK
+# =========================
 @app.post("/webhook")
-async def webhook(request: Request):
+async def whatsapp_webhook(request: Request):
     data = await request.json()
 
     try:
@@ -56,7 +59,6 @@ async def webhook(request: Request):
     except Exception:
         return {"status": "ignored"}
 
-    # Handle text only for onboarding
     if msg_type == "text":
         text = message["text"]["body"].strip()
         handle_onboarding(sender, text)
@@ -70,13 +72,30 @@ async def webhook(request: Request):
     return {"status": "ok"}
 
 # =========================
+# SEND WHATSAPP TEXT
+# =========================
+def send_text(to, text):
+    if not WHATSAPP_TOKEN or not PHONE_NUMBER_ID:
+        return
+
+    url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to,
+        "text": {"body": text}
+    }
+    requests.post(url, headers=headers, json=payload)
+
+# =========================
 # ONBOARDING ENGINE
 # =========================
-
 def handle_onboarding(sender, text):
     user = USERS.get(sender)
 
-    # NEW USER
     if not user:
         USERS[sender] = {
             "state": "ASK_SHOP_NAME",
@@ -85,7 +104,7 @@ def handle_onboarding(sender, text):
             "address": None,
             "latitude": None,
             "longitude": None,
-            "logo_url": None,
+            "logo": None,
             "language": None
         }
         send_text(sender, "👋 Welcome to *AiCashier*!\n\n🏪 What is your *shop name*?")
@@ -97,23 +116,25 @@ def handle_onboarding(sender, text):
         user["shop_name"] = text
         user["state"] = "ASK_OWNER_NAME"
         send_text(sender, "🙋‍♂️ Owner name?")
-    
+
     elif state == "ASK_OWNER_NAME":
         user["owner_name"] = text
         user["state"] = "ASK_ADDRESS"
-        send_text(sender, "🏠 Shop address? (Just type it normally)")
-    
+        send_text(sender, "🏠 Shop address?")
+
     elif state == "ASK_ADDRESS":
         user["address"] = text
         user["state"] = "ASK_LOCATION"
-        send_text(sender, "📍 Please share your *shop location* using WhatsApp location button")
+        send_text(sender, "📍 Please share your shop *location* using WhatsApp location button")
 
     elif state == "ASK_LANGUAGE":
         if text not in ["1", "2", "3"]:
-            send_text(sender, "Please reply:\n1️⃣ Malayalam\n2️⃣ English\n3️⃣ Both")
+            send_text(sender, "Reply with:\n1️⃣ Malayalam\n2️⃣ English\n3️⃣ Both")
             return
+
         user["language"] = {"1": "ml", "2": "en", "3": "mixed"}[text]
         user["state"] = "COMPLETE"
+
         send_text(
             sender,
             f"✅ Onboarding complete!\n\n"
@@ -125,7 +146,6 @@ def handle_onboarding(sender, text):
 # =========================
 # LOCATION HANDLER
 # =========================
-
 def handle_location(sender, location):
     user = USERS.get(sender)
     if not user or user["state"] != "ASK_LOCATION":
@@ -142,15 +162,14 @@ def handle_location(sender, location):
     )
 
 # =========================
-# LOGO HANDLER (TEMP)
+# LOGO HANDLER
 # =========================
-
 def handle_logo(sender):
     user = USERS.get(sender)
     if not user or user["state"] != "ASK_LOGO":
         return
 
-    user["logo_url"] = "stored_later"
+    user["logo"] = "stored_later"
     user["state"] = "ASK_LANGUAGE"
 
     send_text(
