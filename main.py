@@ -17,7 +17,7 @@ app = FastAPI()
 VERIFY_TOKEN = "aicashier123"   # must match Meta webhook verify token
 
 # 🔐 SET THESE IN RAILWAY VARIABLES (RECOMMENDED)
-WHATSAPP_TOKEN = os.environ.get("EAAMR5p7jQ2IBQBNHVZB93rMwAQpiENpuOAdjLHRV2tkZCnePzW8FkbPgdV0ITpSmUEOFUxzEbVuLvVG73p9hZA4N5RTvEZCxUihqlOlmqPuojiXLuSg8a75z8WHhgqM27trJOZB9cTY5tkP1zFu04YFnPAQOAn0KBeSk9ZBDGk3JPbPZBcZAtmhH2uGXoh50seZAF32f23yGUXoayHVFOxFxZAoQ5R9FwjtTeRkLX5")
+WHATSAPP_TOKEN = os.environ.get("")
 PHONE_NUMBER_ID = os.environ.get("908599349007214")
 
 # =========================
