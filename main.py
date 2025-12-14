@@ -16,8 +16,8 @@ app = FastAPI()
 # =========================
 VERIFY_TOKEN = "aicashier123"   # must match Meta exactly
 
-WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
-PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
+WHATSAPP_TOKEN = os.environ.get("EAAMR5p7jQ2IBQBNHVZB93rMwAQpiENpuOAdjLHRV2tkZCnePzW8FkbPgdV0ITpSmUEOFUxzEbVuLvVG73p9hZA4N5RTvEZCxUihqlOlmqPuojiXLuSg8a75z8WHhgqM27trJOZB9cTY5tkP1zFu04YFnPAQOAn0KBeSk9ZBDGk3JPbPZBcZAtmhH2uGXoh50seZAF32f23yGUXoayHVFOxFxZAoQ5R9FwjtTeRkLX5")
+PHONE_NUMBER_ID = os.environ.get("908599349007214")
 
 # =========================
 # TEMP IN-MEMORY STORAGE
