@@ -4,7 +4,6 @@
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import PlainTextResponse
 import requests
-import os
 
 # =========================
 # APP INIT
@@ -12,13 +11,13 @@ import os
 app = FastAPI()
 
 # =========================
-# CONFIG
+# CONFIG (HARDCODED)
 # =========================
 VERIFY_TOKEN = "aicashier123"   # must match Meta webhook verify token
 
-# 🔐 SET THESE IN RAILWAY VARIABLES (RECOMMENDED)
-WHATSAPP_TOKEN = os.environ.get("")
-PHONE_NUMBER_ID = os.environ.get("908599349007214")
+WHATSAPP_TOKEN = "EAAam2H2czaoBQGyWkvkZCiK5pikHo0pnv8TL5yHdnMk3xdvyMYC0IgSgVjEjsp6HmliJEcXSRt4rNhHX3jHIdMZBqQntPFuokF22IRnkGXTvFASZB2scyMLUFhkzQaAL64w9XtO04fDmSNZBhxsVfGUwMAebVuULmsWHgK7r3woTyZB3ZBJdwoTEXEsphRJwZDZD"
+PHONE_NUMBER_ID = "1180419404229128"
+GRAPH_API_VERSION = "v24.0"
 
 # =========================
 # TEMP STORAGE (REPLACE WITH DB LATER)
@@ -74,16 +73,12 @@ async def whatsapp_webhook(request: Request):
     return {"status": "ok"}
 
 # =========================
-# SEND WHATSAPP TEXT (CORRECT PAYLOAD)
+# SEND WHATSAPP TEXT
 # =========================
-def send_text(to, text):
+def send_text(to: str, text: str):
     print("📤 Sending WhatsApp message to:", to)
 
-    if not WHATSAPP_TOKEN or not PHONE_NUMBER_ID:
-        print("❌ Missing WhatsApp credentials")
-        return
-
-    url = f"https://graph.facebook.com/v17.0/{PHONE_NUMBER_ID}/messages"
+    url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/{PHONE_NUMBER_ID}/messages"
 
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
@@ -92,7 +87,6 @@ def send_text(to, text):
 
     payload = {
         "messaging_product": "whatsapp",
-        "recipient_type": "individual",
         "to": to,
         "type": "text",
         "text": {
@@ -112,7 +106,6 @@ def send_text(to, text):
 def handle_onboarding(sender, text):
     user = USERS.get(sender)
 
-    # New user
     if not user:
         USERS[sender] = {
             "state": "ASK_SHOP_NAME",
@@ -179,7 +172,7 @@ def handle_location(sender, location):
     )
 
 # =========================
-# LOGO HANDLER (TEMP)
+# LOGO HANDLER
 # =========================
 def handle_logo(sender):
     user = USERS.get(sender)
